@@ -149,7 +149,7 @@ def run_for_algorithm(algo_name: str, do_search: bool):
             algo_class=agent_class,
             env_id=ENV_ID,
             hyperparameter_ranges=hyperparam_ranges,
-            n_iterations=1,                 # adjust as you wish
+            n_iterations=25,                 # adjust as you wish
             training_timesteps=TRAINING_TIMESTEPS,
             eval_episodes=N_EVAL_EPISODES
         )
