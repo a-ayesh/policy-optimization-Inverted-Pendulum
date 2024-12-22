@@ -197,4 +197,13 @@ def random_search(
     print(f"Best parameters: {best_params}")
     print(f"Best reward: {best_score}")
 
+    # Save the best parameters to a file
+    agent_module_name = algo_class.__module__.split('.')[-1] 
+    save_path = f"{LOG_DIR}/{agent_module_name}_best_params.txt"
+    create_dir(f"{LOG_DIR}/")
+    with open(save_path, 'w') as f:
+        f.write(f"Best Reward: {best_score}\n")
+        f.write(f"Best Parameters: {best_params}\n")
+    print(f"Best parameters saved to {save_path}\n")
+
     return best_params
