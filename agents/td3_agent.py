@@ -1,29 +1,29 @@
-from stable_baselines3 import SAC
+from stable_baselines3 import TD3
 from stable_baselines3.common.evaluation import evaluate_policy
 from agents.base_agent import BaseAgent
 
 
-class SACAgent(BaseAgent):
+class TD3Agent(BaseAgent):
     """
-    SAC Agent implementation.
+    TD3 Agent implementation.
     """
 
     def __init__(self, env_id: str, hyperparams: dict, verbose: int = 1):
         """
-        Initializes the SACAgent.
+        Initializes the TD3Agent.
 
         Args:
             env_id (str): Gym environment ID.
-            hyperparams (dict): Hyperparameters for the SAC agent.
+            hyperparams (dict): Hyperparameters for the TD3 agent.
             verbose (int, optional): Verbosity level. Defaults to 1.
         """
-        super(SACAgent, self).__init__(env_id, hyperparams, verbose)
+        super(TD3Agent, self).__init__(env_id, hyperparams, verbose)
 
     def create_model(self):
         """
-        Creates the SAC model with the given hyperparameters.
+        Creates the TD3 model with the given hyperparameters.
         """
-        self.model = SAC(
+        self.model = TD3(
             "MlpPolicy",
             self.env,
             verbose=self.verbose,
@@ -32,7 +32,7 @@ class SACAgent(BaseAgent):
 
     def train(self, total_timesteps: int, callback):
         """
-        Trains the SAC model.
+        Trains the TD3 model.
         """
         if self.model is None:
             self.create_model()
@@ -40,7 +40,7 @@ class SACAgent(BaseAgent):
 
     def evaluate(self, n_eval_episodes: int = 10) -> tuple:
         """
-        Evaluates the SAC model.
+        Evaluates the TD3 model.
         """
         if self.model is None:
             raise ValueError("Model has not been created or trained yet.")

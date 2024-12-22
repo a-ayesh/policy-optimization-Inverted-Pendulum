@@ -5,6 +5,7 @@ from typing import Dict, Any
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 from lib.config import LOG_DIR
+from lib.progress_callback import ProgressCallback
 
 
 def create_dir(directory: str) -> None:
@@ -18,127 +19,166 @@ def create_dir(directory: str) -> None:
         os.makedirs(directory)
 
 
-def plot_returns(configuration: str, algo: str, callback: Any) -> None:
+def plot_ppo_metrics(configuration: str, algo: str, callback: ProgressCallback, log_dir: str):
     """
-    Plots episode rewards over time.
+    Produce PPO-specific plots: 
+    - returns
+    - policy gradient loss
+    - value loss
+    - entropy loss
+    - approx_kl
+    - etc.
     """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
+    path = os.path.join(log_dir, algo, configuration, "train")
+    os.makedirs(path, exist_ok=True)
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(callback.returns, label='Episode Reward')
-    plt.xlabel('Episode')
-    plt.ylabel('Reward')
-    plt.title('Episode Rewards Over Time')
+    # 1. Plot Returns
+    plt.figure(figsize=(10, 5))
+    plt.plot(callback.returns, label="Episode Reward")
+    plt.title("Episode Rewards Over Time (PPO)")
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{path}/training_returns.png")
+    plt.savefig(f"{path}/ppo_returns.png")
+    plt.close()
+
+    # 2. Plot PPO Losses in one figure
+    plt.figure(figsize=(10, 5))
+    # 'loss' is the total loss in PPO (key: 'loss')
+    # 'policy_gradient_loss' is also relevant in PPO
+    if "loss" in callback.metric_history:
+        plt.plot(callback.metric_history["loss"], label="Total Loss")
+    if "policy_gradient_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["policy_gradient_loss"], label="Policy Gradient Loss")
+    if "value_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["value_loss"], label="Value Loss")
+    plt.title("PPO Losses Over Time")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{path}/ppo_losses.png")
+    plt.close()
+
+    # 3. Plot Additional PPO metrics: entropy_loss, approx_kl, explained_variance, etc.
+    plt.figure(figsize=(10, 5))
+    if "entropy_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["entropy_loss"], label="Entropy Loss")
+    if "approx_kl" in callback.metric_history:
+        plt.plot(callback.metric_history["approx_kl"], label="Approx KL")
+    if "explained_variance" in callback.metric_history:
+        plt.plot(callback.metric_history["explained_variance"], label="Explained Variance")
+    plt.title("PPO Auxiliary Metrics")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{path}/ppo_auxiliary_metrics.png")
     plt.close()
 
 
-def plot_training_losses(configuration: str, algo: str, callback: Any) -> None:
+def plot_a2c_metrics(configuration: str, algo: str, callback: ProgressCallback, log_dir: str):
     """
-    Plots network losses over time.
+    Produce A2C-specific plots:
+    - returns
+    - policy_loss
+    - value_loss
+    - entropy_loss
+    - explained_variance
     """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
+    path = os.path.join(log_dir, algo, configuration, "train")
+    os.makedirs(path, exist_ok=True)
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(callback.losses, label='Total Loss', color='red')
-    plt.xlabel('Update Step')
-    plt.ylabel('Loss')
-    plt.title('Total Training Loss Over Time')
+    # 1. Returns
+    plt.figure(figsize=(10, 5))
+    plt.plot(callback.returns, label="Episode Reward")
+    plt.title("Episode Rewards Over Time (A2C)")
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{path}/training_losses.png")
+    plt.savefig(f"{path}/a2c_returns.png")
+    plt.close()
+
+    # 2. Losses
+    plt.figure(figsize=(10, 5))
+    if "policy_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["policy_loss"], label="Policy Loss")
+    if "value_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["value_loss"], label="Value Loss")
+    plt.title("A2C Losses Over Time")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{path}/a2c_losses.png")
+    plt.close()
+
+    # 3. Entropy, explained variance, etc.
+    plt.figure(figsize=(10, 5))
+    if "entropy_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["entropy_loss"], label="Entropy Loss")
+    if "explained_variance" in callback.metric_history:
+        plt.plot(callback.metric_history["explained_variance"], label="Explained Variance")
+    plt.title("A2C Auxiliary Metrics")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{path}/a2c_auxiliary_metrics.png")
     plt.close()
 
 
-def plot_value_deltas(configuration: str, algo: str, callback: Any) -> None:
+def plot_td3_metrics(configuration: str, algo: str, callback: ProgressCallback, log_dir: str):
     """
-    Plots the delta between Monte Carlo estimate and actual value function.
+    Produce TD3-specific plots:
+    - returns
+    - actor_loss
+    - critic_loss
+    - (optionally) learning_rate, etc.
     """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
+    path = os.path.join(log_dir, algo, configuration, "train")
+    os.makedirs(path, exist_ok=True)
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(callback.value_losses, label='Value Loss Delta', color='orange')
-    plt.xlabel('Update Step')
-    plt.ylabel('Delta')
-    plt.title('Delta in Value Estimates Across Updates')
+    # 1. Returns
+    plt.figure(figsize=(10, 5))
+    plt.plot(callback.returns, label="Episode Reward")
+    plt.title("Episode Rewards Over Time (TD3)")
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{path}/training_value_deltas.png")
+    plt.savefig(f"{path}/td3_returns.png")
     plt.close()
 
-
-def plot_policy_losses(configuration: str, algo: str, callback: Any) -> None:
-    """
-    Plots policy losses over time.
-    """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(callback.policy_losses, label='Policy Gradient Loss', color='green')
-    plt.xlabel('Update Step')
-    plt.ylabel('Policy Loss')
-    plt.title('Policy Gradient Loss Over Time')
+    # 2. Actor/Critic Loss
+    plt.figure(figsize=(10, 5))
+    if "actor_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["actor_loss"], label="Actor Loss")
+    if "critic_loss" in callback.metric_history:
+        plt.plot(callback.metric_history["critic_loss"], label="Critic Loss")
+    plt.title("TD3 Actor/Critic Loss")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Loss")
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{path}/training_policy_losses.png")
+    plt.savefig(f"{path}/td3_losses.png")
     plt.close()
 
-
-def plot_entropy_losses(configuration: str, algo: str, callback: Any) -> None:
-    """
-    Plots entropy losses over time.
-    """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
-
-    if not callback.entropy_losses:
-        print(f"No entropy losses to plot for '{configuration}' configuration.")
-        return
-
-    plt.figure(figsize=(12, 6))
-    plt.plot(callback.entropy_losses, label='Entropy Loss', color='purple')
-    plt.xlabel('Update Step')
-    plt.ylabel('Entropy')
-    plt.title('Entropy Over Time')
+    # 3. Extra metrics (learning_rate, etc.)
+    plt.figure(figsize=(10, 5))
+    if "learning_rate" in callback.metric_history:
+        plt.plot(callback.metric_history["learning_rate"], label="Learning Rate")
+    if "n_updates" in callback.metric_history:
+        plt.plot(callback.metric_history["n_updates"], label="Number of Updates")
+    plt.title("TD3 Auxiliary Metrics")
+    plt.xlabel("Training Updates")
+    plt.ylabel("Value")
     plt.legend()
     plt.grid(True)
-    plt.savefig(f"{path}/training_entropy_losses.png")
+    plt.savefig(f"{path}/td3_auxiliary_metrics.png")
     plt.close()
-
-
-def plot_additional_metrics(configuration: str, algo: str, callback: Any) -> None:
-    """
-    Plots additional training metrics over time.
-    """
-    path = f"{LOG_DIR}/{algo}/{configuration}/train"
-    create_dir(path)
-
-    metrics = {
-        'Approx KL': callback.approx_kl,
-        'Explained Variance': callback.explained_variance,
-        'Standard Deviation': callback.std
-    }
-
-    for metric_name, data in metrics.items():
-        if not data:
-            print(f"No data for '{metric_name}' to plot in '{configuration}' configuration.")
-            continue
-
-        plt.figure(figsize=(12, 6))
-        plt.plot(data, label=metric_name)
-        plt.xlabel('Update Step')
-        plt.ylabel(metric_name)
-        plt.title(f'{metric_name} Over Time')
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(f"{path}/training_{metric_name.lower().replace(' ', '_')}.png")
-        plt.close()
 
 
 def random_search(

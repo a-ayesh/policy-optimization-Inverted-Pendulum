@@ -13,7 +13,6 @@ PPO_DEFAULT_HYPERPARAMS = {
     'ent_coef': 0.0,
     'n_steps': 2048
 }
-
 PPO_OPTIMIZED_HYPERPARAMS = {}
 
 PPO_HYPERPARAMETER_RANGES = {
@@ -22,26 +21,6 @@ PPO_HYPERPARAMETER_RANGES = {
     'clip_range': [0.1, 0.2, 0.3],
     'ent_coef': [0.0, 0.01],
     'n_steps': [128, 256, 512, 1024, 2048]
-}
-
-# =========== SAC ===========
-
-SAC_DEFAULT_HYPERPARAMS = {
-    'learning_rate': 3e-4,
-    'buffer_size': 1000000,
-    'tau': 0.02,
-    'gamma': 0.99,
-    'train_freq': 64
-}
-
-SAC_OPTIMIZED_HYPERPARAMS = {}
-
-SAC_HYPERPARAMETER_RANGES = {
-    'learning_rate': [1e-4, 3e-4, 1e-3],
-    'tau': [0.01, 0.02, 0.05],
-    'gamma': [0.95, 0.99, 0.999],
-    'train_freq': [32, 64, 128],
-    'buffer_size': [100000, 500000, 1000000]
 }
 
 # =========== A2C ===========
@@ -62,3 +41,27 @@ A2C_HYPERPARAMETER_RANGES = {
     'gae_lambda': [0.9, 0.95, 1.0]
 }
 
+# =========== TD3 ===========
+
+TD3_DEFAULT_HYPERPARAMS = {
+    'learning_rate': 1e-3,
+    'buffer_size': 1000000,
+    'tau': 0.005,
+    'gamma': 0.99,
+    'train_freq': 100,
+    'gradient_steps': 100,
+    'batch_size': 256,
+    'policy_delay': 2,
+}
+TD3_OPTIMIZED_HYPERPARAMS = {}
+
+TD3_HYPERPARAMETER_RANGES = {
+    'learning_rate': [1e-4, 1e-3, 1e-2],
+    'buffer_size': [100000, 500000, 1000000],
+    'tau': [0.005, 0.01, 0.02],
+    'gamma': [0.9, 0.99, 0.999],
+    'train_freq': [50, 100, 200],
+    'gradient_steps': [50, 100, 200],
+    'batch_size': [64, 128, 256],
+    'policy_delay': [1, 2, 3],
+}

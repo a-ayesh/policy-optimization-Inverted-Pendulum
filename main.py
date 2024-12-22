@@ -1,8 +1,8 @@
 import argparse
 
 from agents.ppo_agent import PPOAgent
-from agents.sac_agent import SACAgent
 from agents.a2c_agent import A2CAgent
+from agents.td3_agent import TD3Agent 
 
 from lib.progress_callback import ProgressCallback
 from lib.config import (
@@ -16,15 +16,15 @@ from lib.config import (
     PPO_OPTIMIZED_HYPERPARAMS,
     PPO_HYPERPARAMETER_RANGES,
 
-    # SAC
-    SAC_DEFAULT_HYPERPARAMS,
-    SAC_OPTIMIZED_HYPERPARAMS,
-    SAC_HYPERPARAMETER_RANGES,
-
     # A2C
     A2C_DEFAULT_HYPERPARAMS,
     A2C_OPTIMIZED_HYPERPARAMS,
     A2C_HYPERPARAMETER_RANGES,
+
+    # TD3
+    TD3_DEFAULT_HYPERPARAMS,
+    TD3_OPTIMIZED_HYPERPARAMS,
+    TD3_HYPERPARAMETER_RANGES,
 )
 
 from lib.utils import *
@@ -36,12 +36,12 @@ def select_agent_class(algo_name: str):
     """
     if algo_name.lower() == 'ppo':
         return PPOAgent
-    elif algo_name.lower() == 'sac':
-        return SACAgent
     elif algo_name.lower() == 'a2c':
         return A2CAgent
+    elif algo_name.lower() == 'td3':
+        return TD3Agent
     else:
-        raise ValueError(f"Unknown algorithm '{algo_name}'. Supported: ppo, sac, a2c.")
+        raise ValueError(f"Unknown algorithm '{algo_name}'. Supported: ppo, a2c, td3.")
 
 
 def get_default_hyperparams(algo_name: str):
@@ -50,10 +50,10 @@ def get_default_hyperparams(algo_name: str):
     """
     if algo_name.lower() == 'ppo':
         return PPO_DEFAULT_HYPERPARAMS
-    elif algo_name.lower() == 'sac':
-        return SAC_DEFAULT_HYPERPARAMS
     elif algo_name.lower() == 'a2c':
         return A2C_DEFAULT_HYPERPARAMS
+    elif algo_name.lower() == 'td3':
+        return TD3_DEFAULT_HYPERPARAMS
     else:
         raise ValueError(f"Unknown algorithm '{algo_name}'.")
 
@@ -65,10 +65,10 @@ def get_optimized_hyperparams(algo_name: str):
     """
     if algo_name.lower() == 'ppo':
         return PPO_OPTIMIZED_HYPERPARAMS
-    elif algo_name.lower() == 'sac':
-        return SAC_OPTIMIZED_HYPERPARAMS
     elif algo_name.lower() == 'a2c':
         return A2C_OPTIMIZED_HYPERPARAMS
+    elif algo_name.lower() == 'td3':
+        return TD3_OPTIMIZED_HYPERPARAMS
     else:
         raise ValueError(f"Unknown algorithm '{algo_name}'.")
 
@@ -79,10 +79,10 @@ def get_hyperparameter_ranges(algo_name: str):
     """
     if algo_name.lower() == 'ppo':
         return PPO_HYPERPARAMETER_RANGES
-    elif algo_name.lower() == 'sac':
-        return SAC_HYPERPARAMETER_RANGES
     elif algo_name.lower() == 'a2c':
         return A2C_HYPERPARAMETER_RANGES
+    elif algo_name.lower() == 'td3':
+        return TD3_HYPERPARAMETER_RANGES
     else:
         raise ValueError(f"Unknown algorithm '{algo_name}'.")
 
@@ -96,27 +96,29 @@ def train_and_evaluate(agent, algo, callback, total_timesteps, configuration_lab
     print("Training complete.\n")
 
     print(f"Evaluating '{algo}' agent with '{configuration_label}' hyperparameters...")
-    mean_reward, std_reward = agent.evaluate(n_eval_episodes=N_EVAL_EPISODES)
+    mean_reward, std_reward = agent.evaluate(n_eval_episodes=10)  # or your config
     print(f"Stats after training the agent ({configuration_label}):")
     print(f"Mean Reward: {mean_reward:.2f} +/- {std_reward}\n")
 
-    print(f"Plotting training metrics for '{configuration_label}' configuration...")
-    plot_returns(configuration_label, algo, callback)
-    plot_training_losses(configuration_label, algo, callback)
-    plot_value_deltas(configuration_label, algo, callback)
-    plot_policy_losses(configuration_label, algo, callback)
-    plot_entropy_losses(configuration_label, algo, callback)
-    plot_additional_metrics(configuration_label, algo, callback)
-    print(f"Plots saved for '{configuration_label}' configuration.\n")
+    # Depending on the algorithm, call the relevant plot function
+    print(f"Plotting training metrics for '{configuration_label}' configuration ({algo})...")
+
+    if algo.lower() == 'ppo':
+        plot_ppo_metrics(configuration_label, algo, callback, LOG_DIR)
+    elif algo.lower() == 'a2c':
+        plot_a2c_metrics(configuration_label, algo, callback, LOG_DIR)
+    elif algo.lower() == 'td3':
+        plot_td3_metrics(configuration_label, algo, callback, LOG_DIR)
+    else:
+        print(f"No specialized plotting for algorithm '{algo}', skipping...")
+
+    print(f"Plots saved for '{configuration_label}' configuration ({algo}).\n")
 
 
 def run_for_algorithm(algo_name: str, do_search: bool):
-    """
-    Executes the training/evaluation workflow for a single algorithm.
-    """
     print(f"Selected algorithm: {algo_name.upper()}")
 
-    # Get relevant hyperparams and agent class
+    # Get relevant hyperparams
     agent_class = select_agent_class(algo_name)
     default_hparams = get_default_hyperparams(algo_name)
     optimized_hparams = get_optimized_hyperparams(algo_name)
@@ -132,7 +134,7 @@ def run_for_algorithm(algo_name: str, do_search: bool):
     # Evaluate before training (Random Agent)
     print("Evaluating before training (Default Params)...")
     mean_reward, std_reward = agent_default.evaluate(n_eval_episodes=N_EVAL_EPISODES)
-    print(f"Stats before training (Default Params):\nMean Reward: {mean_reward:.2f} +/- {std_reward}\n")
+    print(f"Stats before training (Default Params): Mean Reward: {mean_reward:.2f} +/- {std_reward}\n")
 
     # Instantiate the callback
     callback_default = ProgressCallback()
@@ -149,11 +151,11 @@ def run_for_algorithm(algo_name: str, do_search: bool):
             algo_class=agent_class,
             env_id=ENV_ID,
             hyperparameter_ranges=hyperparam_ranges,
-            n_iterations=25,                 # adjust as you wish
+            n_iterations=25,
             training_timesteps=TRAINING_TIMESTEPS,
             eval_episodes=N_EVAL_EPISODES
         )
-        optimized_hparams.update(best_params)  # update the global dictionary
+        optimized_hparams.update(best_params)  
         print(f"Best Hyperparameters Found: {best_params}\n")
 
         # ==============
@@ -166,7 +168,7 @@ def run_for_algorithm(algo_name: str, do_search: bool):
         # Evaluate before training with optimized params (Random Agent)
         print("Evaluating before training (Optimized Params)...")
         mean_reward, std_reward = agent_optimized.evaluate(n_eval_episodes=N_EVAL_EPISODES)
-        print(f"Stats before training (Optimized Params):\nMean Reward: {mean_reward:.2f} +/- {std_reward}\n")
+        print(f"Stats before training (Optimized Params): Mean Reward: {mean_reward:.2f} +/- {std_reward}\n")
 
         # Instantiate a new callback for optimized run
         callback_optimized = ProgressCallback()
@@ -185,7 +187,7 @@ def run_for_algorithm(algo_name: str, do_search: bool):
 def main():
     parser = argparse.ArgumentParser(description="RL Project Main Script")
     parser.add_argument('--algo', type=str, default='ppo',
-                        help='Algorithm to use: ppo, sac, a2c, or all. Default is ppo.')
+                        help='Algorithm to use: ppo, a2c, or td3. Default is ppo.')
     parser.add_argument('--search', action='store_true',
                         help='Perform hyperparameter search before training with optimized parameters.')
     args = parser.parse_args()
@@ -193,8 +195,8 @@ def main():
     algo_name = args.algo.lower()
 
     if algo_name == 'all':
-        # Run workflow for PPO, then SAC, then A2C
-        for alg in ['ppo', 'sac', 'a2c']:
+        # Run workflow for PPO, A2C, and TD3
+        for alg in ['ppo', 'a2c', 'td3']:
             run_for_algorithm(alg, args.search)
     else:
         # Run workflow for the selected algorithm
