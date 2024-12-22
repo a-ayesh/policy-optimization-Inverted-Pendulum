@@ -1,5 +1,3 @@
-# agents/base_agent.py
-
 from abc import ABC, abstractmethod
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import BaseCallback

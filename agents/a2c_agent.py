@@ -1,31 +1,29 @@
-# agents/ppo_agent.py
-
-from stable_baselines3 import PPO
+from stable_baselines3 import A2C
 from stable_baselines3.common.evaluation import evaluate_policy
 from agents.base_agent import BaseAgent
 
 
-class PPOAgent(BaseAgent):
+class A2CAgent(BaseAgent):
     """
-    PPO Agent implementation.
+    A2C Agent implementation.
     """
 
     def __init__(self, env_id: str, hyperparams: dict, verbose: int = 1):
         """
-        Initializes the PPOAgent.
+        Initializes the A2CAgent.
 
         Args:
             env_id (str): Gym environment ID.
-            hyperparams (dict): Hyperparameters for the PPO agent.
+            hyperparams (dict): Hyperparameters for the A2C agent.
             verbose (int, optional): Verbosity level. Defaults to 1.
         """
-        super(PPOAgent, self).__init__(env_id, hyperparams, verbose)
+        super(A2CAgent, self).__init__(env_id, hyperparams, verbose)
 
     def create_model(self):
         """
-        Creates the PPO model with the given hyperparameters.
+        Creates the A2C model with the given hyperparameters.
         """
-        self.model = PPO(
+        self.model = A2C(
             "MlpPolicy",
             self.env,
             verbose=self.verbose,
@@ -34,11 +32,7 @@ class PPOAgent(BaseAgent):
 
     def train(self, total_timesteps: int, callback):
         """
-        Trains the PPO model.
-
-        Args:
-            total_timesteps (int): Total training timesteps.
-            callback (BaseCallback): Callback for monitoring training.
+        Trains the A2C model.
         """
         if self.model is None:
             self.create_model()
@@ -46,13 +40,7 @@ class PPOAgent(BaseAgent):
 
     def evaluate(self, n_eval_episodes: int = 10) -> tuple:
         """
-        Evaluates the PPO model.
-
-        Args:
-            n_eval_episodes (int, optional): Number of evaluation episodes. Defaults to 10.
-
-        Returns:
-            tuple: Mean reward and standard deviation.
+        Evaluates the A2C model.
         """
         if self.model is None:
             raise ValueError("Model has not been created or trained yet.")

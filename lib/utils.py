@@ -1,18 +1,11 @@
 import os
 import matplotlib.pyplot as plt
-from typing import Any
 import random
 from typing import Dict, Any
-from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
-from lib.progress_callback import ProgressCallback 
-from lib.config import (
-    HYPERPARAMETER_RANGES,
-    ENV_ID,
-    LOG_DIR
-)
+from lib.config import LOG_DIR
+
 
 def create_dir(directory: str) -> None:
     """
@@ -25,15 +18,11 @@ def create_dir(directory: str) -> None:
         os.makedirs(directory)
 
 
-def plot_returns(configuration: str, callback: Any) -> None:
+def plot_returns(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots episode rewards over time.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     plt.figure(figsize=(12, 6))
@@ -47,15 +36,11 @@ def plot_returns(configuration: str, callback: Any) -> None:
     plt.close()
 
 
-def plot_training_losses(configuration: str, callback: Any) -> None:
+def plot_training_losses(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots network losses over time.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     plt.figure(figsize=(12, 6))
@@ -69,15 +54,11 @@ def plot_training_losses(configuration: str, callback: Any) -> None:
     plt.close()
 
 
-def plot_value_deltas(configuration: str, callback: Any) -> None:
+def plot_value_deltas(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots the delta between Monte Carlo estimate and actual value function.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     plt.figure(figsize=(12, 6))
@@ -91,15 +72,11 @@ def plot_value_deltas(configuration: str, callback: Any) -> None:
     plt.close()
 
 
-def plot_policy_losses(configuration: str, callback: Any) -> None:
+def plot_policy_losses(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots policy losses over time.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     plt.figure(figsize=(12, 6))
@@ -113,15 +90,11 @@ def plot_policy_losses(configuration: str, callback: Any) -> None:
     plt.close()
 
 
-def plot_entropy_losses(configuration: str, callback: Any) -> None:
+def plot_entropy_losses(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots entropy losses over time.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     if not callback.entropy_losses:
@@ -139,15 +112,11 @@ def plot_entropy_losses(configuration: str, callback: Any) -> None:
     plt.close()
 
 
-def plot_additional_metrics(configuration: str, callback: Any) -> None:
+def plot_additional_metrics(configuration: str, algo: str, callback: Any) -> None:
     """
     Plots additional training metrics over time.
-
-    Args:
-        configuration (str): Configuration name for saving plots.
-        callback (ProgressCallback): Callback containing training metrics.
     """
-    path = f"logs/ppo/{configuration}/train"
+    path = f"{LOG_DIR}/{algo}/{configuration}/train"
     create_dir(path)
 
     metrics = {
@@ -173,6 +142,7 @@ def plot_additional_metrics(configuration: str, callback: Any) -> None:
 
 
 def random_search(
+    algo_class,
     env_id: str,
     hyperparameter_ranges: Dict[str, list],
     n_iterations: int = 10,
@@ -180,9 +150,10 @@ def random_search(
     eval_episodes: int = 10
 ) -> Dict[str, Any]:
     """
-    Performs random search to find the best hyperparameters.
+    Performs random search to find the best hyperparameters for a given algorithm class.
 
     Args:
+        algo_class: The agent class (PPOAgent, SACAgent, A2CAgent, etc.).
         env_id (str): ID of the Gym environment.
         hyperparameter_ranges (Dict[str, list]): Hyperparameter search space.
         n_iterations (int, optional): Number of random iterations. Defaults to 10.
@@ -205,10 +176,12 @@ def random_search(
         # Create a new training environment for each iteration
         train_env = make_vec_env(env_id, n_envs=4)
 
-        model = PPO('MlpPolicy', train_env, **params, verbose=0)
-        model.learn(total_timesteps=training_timesteps)
+        # Use the agent class’s logic
+        agent = algo_class(env_id, params, verbose=0)
+        agent.create_model()
+        agent.model.learn(total_timesteps=training_timesteps)
 
-        mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=eval_episodes, warn=False)
+        mean_reward, std_reward = evaluate_policy(agent.model, eval_env, n_eval_episodes=eval_episodes, warn=False)
         print(f"Mean Reward: {mean_reward:.2f} +/- {std_reward}\n")
 
         if mean_reward > best_score:
@@ -223,13 +196,5 @@ def random_search(
 
     print(f"Best parameters: {best_params}")
     print(f"Best reward: {best_score}")
-
-    # Save the best parameters to a file
-    save_path = f"{LOG_DIR}/random_search/best_params.txt"
-    create_dir(f"{LOG_DIR}/random_search")
-    with open(save_path, 'w') as f:
-        f.write(f"Best Reward: {best_score}\n")
-        f.write(f"Best Parameters: {best_params}\n")
-    print(f"Best parameters saved to {save_path}\n")
 
     return best_params
